@@ -126,4 +126,12 @@ def wf_adoption_speed():
     
     print(df.head())
 
+    # Nuevo tamaño del dataset
+    print("El nuevo tamaño del dataset:", len(df.columns))
+
+
+
+#--------------------------------------------------------------------
+# Corro el programa
+
 wf_adoption_speed()
