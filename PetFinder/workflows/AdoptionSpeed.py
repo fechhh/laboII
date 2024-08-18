@@ -22,18 +22,16 @@ def DT_incoporar_dataset():
     
     # Ruta Datasets
     train_path = '../petfinder_dataset/train/train.csv'
-    test_path = '../petfinder_dataset/test/test.csv'
     
     # Cargo el dataset de entrenamiento y testeo
-    df_train = pd.read_csv(train_path)
-    df_test = pd.read_csv(test_path)
+    df = pd.read_csv(train_path)
     
     # Modifico el tipo de datos
-    df_train['Vaccinated'] = df_train['Vaccinated'].astype('category')
-    df_train['Dewormed'] = df_train['Dewormed'].astype('category')
-    df_train['Sterilized'] = df_train['Sterilized'].astype('category')
+    df['Vaccinated'] = df['Vaccinated'].astype('category')
+    df['Dewormed'] = df['Dewormed'].astype('category')
+    df['Sterilized'] = df['Sterilized'].astype('category')
     
-    return df_train, df_test
+    return df
 
 
 #--------------------------------------------------------------------
@@ -58,30 +56,28 @@ def CA_catastrophe_analysis(df):
 #--------------------------------------------------------------------
 # Feature Engineering manual
 
-def FE_manual(df_train, df_test):
+def FE_manual(df):
     
     # Misma raza
-    df_train['SameBreed'] = np.where(df_train['Breed1'] == df_train['Breed2'], 1, 0)
-    df_test['SameBreed'] = np.where(df_test['Breed1'] == df_test['Breed2'], 1, 0)
+    df['SameBreed'] = np.where(df['Breed1'] == df['Breed2'], 1, 0)
+    df['SameBreed'] = np.where(df['Breed1'] == df['Breed2'], 1, 0)
 
     # Description in english (VER!)
     #df['DescEnglish'] = np.where(df['Description'].str.contains('english', case=False), 1, 0)
 
-    return df_train, df_test
+    return df
 
 #--------------------------------------------------------------------
 # Feature Engineering random forest
 
-def FErf_attributes_base(df_train, df_test):
+def FErf_attributes_base(df):
     
     # Select only numerical columns, excluding the target column
-    numerical_cols = df_train.select_dtypes(include=np.number).columns.drop("AdoptionSpeed")
+    numerical_cols = df.select_dtypes(include=np.number).columns.drop("AdoptionSpeed")
 
     # Create X and y for training and testing sets
-    X_train = df_train[numerical_cols]
-    y_train = df_train["AdoptionSpeed"]
-    
-    X_test = df_test[numerical_cols]
+    X_train = df[numerical_cols]
+    y_train = df["AdoptionSpeed"]
 
     # Train RandomForest model
     rf = RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
@@ -93,17 +89,14 @@ def FErf_attributes_base(df_train, df_test):
     
     # Predict the leaves of each tree in the forest
     train_leaves = rf.apply(X_train)
-    test_leaves = rf.apply(X_test)
     
     # Convert leaves to DataFrame
     train_leaves_df = pd.DataFrame(train_leaves, columns=[f'leaf_{i}' for i in range(train_leaves.shape[1])])
-    test_leaves_df = pd.DataFrame(test_leaves, columns=[f'leaf_{i}' for i in range(test_leaves.shape[1])])
     
     # Combine the original DataFrame with the leaves DataFrame
-    df_train_combined = pd.concat([df_train.reset_index(drop=True), train_leaves_df], axis=1)
-    df_test_combined = pd.concat([df_test.reset_index(drop=True), test_leaves_df], axis=1)
+    df_combined = pd.concat([df.reset_index(drop=True), train_leaves_df], axis=1)
     
-    return df_train_combined, df_test_combined
+    return df_combined
 
 
 #--------------------------------------------------------------------
@@ -159,7 +152,7 @@ def hyperparameter_tuning(df):
 
     # Create the Optuna study
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=3)   # VERRRRR
+    study.optimize(objective, n_trials=20)
 
     # Get the best hyperparameters
     best_params = study.best_params
@@ -172,24 +165,11 @@ def hyperparameter_tuning(df):
 
 # Final Model LightGBM
 
-def final_model_lightgbm(df_train, df_test, best_params):
-    
-    # Check amount of features in each df
-    print("Number of features in training set:", df_train.shape[1])
-    print("Number of features in test set:", df_test.shape[1])
-    
-    # Check if the df have different features
-    print("Features in training set but not in test set:", set(df_train.columns) - set(df_test.columns))
-    
-    
-    # Separate the PetID column
-    PetID = df_test['PetID']
-    # Drop the PetID column
-    df_test = df_test.drop("PetID", axis=1)
+def final_model_lightgbm(df, best_params):
     
     # Select features and target variable
-    X = df_train.drop(["AdoptionSpeed", "PetID"], axis=1)
-    y = df_train["AdoptionSpeed"]
+    X = df.drop(["AdoptionSpeed", "PetID"], axis=1)
+    y = df["AdoptionSpeed"]
 
     # Create the LightGBM dataset
     train_data = lgb.Dataset(X, label=y)
@@ -198,9 +178,9 @@ def final_model_lightgbm(df_train, df_test, best_params):
     model = lgb.train(best_params, train_data, num_boost_round=100)
     
     # Make predictions and save them to a CSV file
-    adopt_pred = model.predict(df_test)
+    adopt_pred = model.predict(df)
     
-    write_predictions_to_csv(model, df_test, PetID)
+    #write_predictions_to_csv(model, df, PetID)
 
     return model
 
@@ -244,15 +224,13 @@ def write_predictions_to_csv(model, df_test, PetID, output_file="predictions.csv
 
 def wf_adoption_speed():
     
-    df_train, df_test = DT_incoporar_dataset()
-    df_train = CA_catastrophe_analysis(df_train)
-    df_test = CA_catastrophe_analysis(df_test)
-    df_train, df_test = FE_manual(df_train, df_test)
-    df_train, df_test = FErf_attributes_base(df_train, df_test)
-    best_params = hyperparameter_tuning(df_train)
-    final_model = final_model_lightgbm(df_train, df_test, best_params)
+    df = DT_incoporar_dataset()
+    df = CA_catastrophe_analysis(df)
+    df = FE_manual(df)
+    df = FErf_attributes_base(df)
+    best_params = hyperparameter_tuning(df)
+    #final_model = final_model_lightgbm(df_train, df_test, best_params)
     
-    print(df_test.head())
 
 
 
