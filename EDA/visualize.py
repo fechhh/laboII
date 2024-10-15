@@ -2,10 +2,11 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import seaborn as sns
+import math
 from IPython.display import display
 
 
-def run_eda(dataframe):
+def run_eda(dataframe, numeric_cols, categorical_cols):
     """
     Ejecutar EDA
 
@@ -17,39 +18,6 @@ def run_eda(dataframe):
     """
     # Formato graficos
     sns.set(style="whitegrid")
-
-    # Formato variables categoricas que se encuentran como numericas
-    dataframe = transform_columns(dataframe)
-
-    # variable numericas
-    numeric_cols = dataframe.select_dtypes(include="number").columns
-
-    # variables categoricas
-    categorical_cols = [
-        "Type",
-        "Gender",
-        "MaturitySize",
-        "FurLength",
-        "Vaccinated",
-        "Dewormed",
-        "Sterilized",
-        "Health",
-        # "Fee", # es numerica
-    ]  # dataframe.select_dtypes(include="object").columns
-
-    # filtrar campos que parecen ser numericos pero no lo son
-    campos_num_categ = [
-        "Breed1",
-        "Breed2",
-        "Color1",
-        "Color2",
-        "Color3",
-        "State",
-        # "VideoAmt",
-        # "PhotoAmt",
-        "AdoptionSpeed",
-    ]
-    numeric_cols = [col for col in numeric_cols if col not in campos_num_categ]
 
     # Informacion basica
     print("DataFrame Information:")
@@ -73,22 +41,66 @@ def run_eda(dataframe):
 
     # Distribucion variables numericas
     if len(numeric_cols) > 0:
-        dataframe[numeric_cols].hist(figsize=(12, 10), bins=30)
-        plt.suptitle("Distribution of Numeric Columns")
+        # Número de variables numéricas
+        num_numeric = len(numeric_cols)
+
+        # Definir el número de filas y columnas para los subplots (ejemplo: 3 columnas)
+        cols = 3
+        rows = math.ceil(num_numeric / cols)
+
+        # Crear la figura para los subplots
+        fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
+        axes = axes.flatten()  # Aplanar la matriz de ejes para indexarlos fácilmente
+
+        # Iterar por cada variable numérica
+        for i, col in enumerate(numeric_cols):
+            axes[i].hist(dataframe[col], bins=30, color="skyblue", edgecolor="black")
+            axes[i].set_title(f"Distribution of {col}")
+            axes[i].set_xlabel(col)
+            axes[i].set_ylabel("Frequency")
+
+        # Eliminar subplots vacíos si hay menos variables que subplots
+        for i in range(num_numeric, len(axes)):
+            fig.delaxes(axes[i])
+
+        # Ajustar la disposición y mostrar el gráfico
+        plt.tight_layout()
         plt.show()
 
     # Distribucion variables categoricas
     if len(categorical_cols) > 0:
-        for col in categorical_cols:
-            plt.figure(figsize=(10, 6))
-            sns.countplot(
-                data=dataframe, x=col, order=dataframe[col].value_counts().index
-            )
-            plt.title(f"Distribution of {col}")
-            plt.xticks(rotation=45)
-            plt.show()
 
-    # Variable respuesta 'AdoptionSpeed'
+        # Número de variables categóricas
+        num_categorical = len(categorical_cols)
+
+        # Definir el número de filas y columnas para los subplots (ejemplo: 3 columnas)
+        cols = 3
+        rows = math.ceil(num_categorical / cols)
+
+        # Crear la figura para los subplots
+        fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
+        axes = axes.flatten()  # Aplanar la matriz de ejes para indexarlos fácilmente
+
+        # Iterar por cada variable categórica
+        for i, col in enumerate(categorical_cols):
+            sns.countplot(
+                data=dataframe,
+                x=col,
+                order=dataframe[col].value_counts().index,
+                ax=axes[i],
+            )
+            axes[i].set_title(f"Distribution of {col}")
+            axes[i].tick_params(axis="x", rotation=45)
+
+        # Eliminar subplots vacíos si hay menos variables que subplots
+        for i in range(num_categorical, len(axes)):
+            fig.delaxes(axes[i])
+
+        # Ajustar la disposición y mostrar el gráfico
+        plt.tight_layout()
+        plt.show()
+
+    # Variable respuesta
     if "AdoptionSpeed" in dataframe.columns:
         plt.figure(figsize=(10, 6))
         sns.countplot(
@@ -126,42 +138,87 @@ def run_eda(dataframe):
         #         plt.title(f"{col} vs AdoptionSpeed")
         #         plt.xticks(rotation=45)
         #         plt.show()
-        for col in categorical_cols:
-            if col != "AdoptionSpeed":
-                plt.figure(figsize=(12, 6))
 
-                # Calcular el tamaño de cada combinación de col y AdoptionSpeed
-                col_counts = (
-                    dataframe.groupby([col, "AdoptionSpeed"], observed=True)
-                    .size()
-                    .reset_index(name="counts")
-                )
+        # Número de variables categóricas (excluyendo 'AdoptionSpeed')
+        categorical_cols_no_target = [
+            col for col in categorical_cols if col != "AdoptionSpeed"
+        ]
+        num_categorical_no_target = len(categorical_cols_no_target)
 
-                # Calcular la proporción de cada AdoptionSpeed dentro de cada categoría de col
-                col_counts["percentage"] = col_counts.groupby(col, observed=True)[
-                    "counts"
-                ].transform(lambda x: x / x.sum())
+        # Definir el número de filas y columnas para los subplots (ejemplo: 2 columnas)
+        cols = 2
+        rows = math.ceil(num_categorical_no_target / cols)
 
-                # Graficar usando barplot para reflejar la proporción
-                sns.barplot(
-                    data=col_counts,
-                    x=col,
-                    y="percentage",
-                    hue="AdoptionSpeed",
-                    order=dataframe[col].value_counts().index,
-                )
+        # Crear la figura para los subplots
+        fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
+        axes = axes.flatten()  # Aplanar la matriz de ejes para indexarlos fácilmente
 
-            plt.title(f"{col} vs AdoptionSpeed (Frecuencia Relativa por Categoría)")
-            plt.xticks(rotation=45)
-            plt.ylabel("Frecuencia Relativa")
-            plt.show()
+        # Iterar por cada variable categórica (excluyendo 'AdoptionSpeed')
+        for i, col in enumerate(categorical_cols_no_target):
+            # Calcular el tamaño de cada combinación de col y AdoptionSpeed
+            col_counts = (
+                dataframe.groupby([col, "AdoptionSpeed"], observed=True)
+                .size()
+                .reset_index(name="counts")
+            )
+
+            # Calcular la proporción de cada AdoptionSpeed dentro de cada categoría de col
+            col_counts["percentage"] = col_counts.groupby(col, observed=True)[
+                "counts"
+            ].transform(lambda x: x / x.sum())
+
+            # Graficar usando barplot para reflejar la proporción
+            sns.barplot(
+                data=col_counts,
+                x=col,
+                y="percentage",
+                hue="AdoptionSpeed",
+                order=dataframe[col].value_counts().index,
+                ax=axes[i],  # Añadir al subplot correspondiente
+            )
+
+            # Personalizar el gráfico
+            axes[i].set_title(f"{col} vs AdoptionSpeed (Frecuencia Relativa)")
+            axes[i].set_ylabel("Frecuencia Relativa")
+            axes[i].tick_params(
+                axis="x", rotation=45
+            )  # Ajustar las etiquetas del eje X
+
+        # Eliminar subplots vacíos si hay menos variables que subplots
+        for i in range(num_categorical_no_target, len(axes)):
+            fig.delaxes(axes[i])
+
+        # Ajustar la disposición y mostrar los gráficos
+        plt.tight_layout()
+        plt.show()
 
         # Visualize the relationship between 'AdoptionSpeed' and numeric columns
-        for col in numeric_cols:
-            plt.figure(figsize=(12, 6))
-            sns.boxplot(data=dataframe, x="AdoptionSpeed", y=col)
-            plt.title(f"{col} vs AdoptionSpeed")
-            plt.show()
+        # Número de variables numéricas
+        num_numeric = len(numeric_cols)
+
+        # Definir el número de filas y columnas para los subplots (ejemplo: 2 columnas)
+        cols = 2
+        rows = math.ceil(num_numeric / cols)
+
+        # Crear la figura para los subplots
+        fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
+        axes = axes.flatten()  # Aplanar la matriz de ejes para indexarlos fácilmente
+
+        # Iterar por cada variable numérica
+        for i, col in enumerate(numeric_cols):
+            # Crear el boxplot
+            sns.boxplot(data=dataframe, x="AdoptionSpeed", y=col, ax=axes[i])
+
+            # Añadir título
+            axes[i].set_title(f"{col} vs AdoptionSpeed")
+
+        # Eliminar subplots vacíos si hay menos variables que subplots
+        for i in range(num_numeric, len(axes)):
+            fig.delaxes(axes[i])
+
+        # Ajustar la disposición y mostrar los gráficos
+        plt.tight_layout()
+        plt.show()
 
     # Matriz correlacion para variables numericas (puede haber variables donde esto no tenga sentido)
     # Ej. color
@@ -187,7 +244,7 @@ def run_eda(dataframe):
 
 
 # TODO: considerar para data cleaning...
-def transform_columns(df):
+def transform_original_columns(df):
     """
     Transforma las variables del DataFrame en categóricas o texto según corresponda.
 
@@ -226,11 +283,11 @@ def transform_columns(df):
         if col in df.columns:
             df[col] = df[col].map(mapping).astype("category")
 
-    # Variables a texto
-    text_columns = ["PetID", "Name", "RescuerID", "Description"]
-    for col in text_columns:
-        if col in df.columns:
-            df[col] = df[col].astype(str)
+    # Variables a texto # TODO: VER SI LO INCLUIMOS....
+    # text_columns = ["PetID", "Name", "RescuerID", "Description"]
+    # for col in text_columns:
+    #    if col in df.columns:
+    #        df[col] = df[col].astype(str)
 
     # La variable 'State' debería ser transformada en categórica según un diccionario específico de estados.
     # Ejemplo (necesita ajustar según el diccionario de estados real):
