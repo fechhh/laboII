@@ -6,124 +6,161 @@ import math
 from IPython.display import display
 
 
-def run_eda(dataframe, numeric_cols, categorical_cols):
+def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
     """
     Ejecutar EDA
 
-    Parameters:
-    df (pd.DataFrame): El DataFrame que contiene los datos de las mascotas.
+    Parameters
+    ----------
+    df: pd.DataFrame
+        Conjunto de datos de las mascotas.
+    numeric_cols: list
+        Listado de variables numericas a incluir en el EDA.
+    categorical_cols: list
+        Listado de variables categoricas a incluir en el EDA.
+    seccion: str
+        Seccion a mostrar en el EDA.
 
-    Returns:
+
+    Returns
+    ----------
     None
     """
+    # Control seccion definida
+    if seccion not in [
+        "completo",
+        "info basica",
+        "valores perdidos",
+        "distribucion variables numericas",
+        "distribucion variables categoricas",
+        "distribucion variable respuesta",
+        "relacion variables numericas con respuesta",
+        "relacion variables categoricas con respuesta",
+        "matriz correlacion",
+    ]:
+        print("Definir seccion!")
+
     # Formato graficos
     sns.set(style="whitegrid")
 
     # Informacion basica
-    print("DataFrame Information:")
-    display(dataframe.info())
-    print("\nDataFrame Description:")
-    display(dataframe[numeric_cols].describe(include="all"))
+    if seccion in ["completo", "info basica"]:
+        print("DataFrame Information:")
+        display(dataframe.info())
+        print("\nDataFrame Description:")
+        display(dataframe[numeric_cols].describe(include="all"))
+        # TODO: incluir values count para variables categoricas?
 
     # Valores perdidos
     # Cuidado!
     # Podria pasar que:
     # Variables texto pueden estar vacias: '' o tener un string que indique nulo 'sin valor'
     # Variables numericas pueden tener un valor 0 o 99 para indicar valores perdidos
-    print("\nMissing Values:")
-    display(dataframe.isnull().sum())
+    if seccion in ["completo", "valores perdidos"]:
+        print("\Valores perdidos:")
+        display(dataframe.isnull().sum())
 
-    # Ver valores perdidos
-    plt.figure(figsize=(12, 6))
-    sns.heatmap(dataframe.isnull(), cbar=False, cmap="viridis")
-    plt.title("Missing Values Heatmap")
-    plt.show()
+        # Ver valores perdidos
+        plt.figure(figsize=(12, 6))
+        sns.heatmap(dataframe.isnull(), cbar=False, cmap="viridis")
+        plt.title("Heatmap de Valores Perdidos")
+        plt.show()
 
     # Distribucion variables numericas
-    if len(numeric_cols) > 0:
-        # Número de variables numéricas
-        num_numeric = len(numeric_cols)
+    if seccion in ["completo", "distribucion variables numericas"]:
+        if len(numeric_cols) > 0:
+            # Número de variables numéricas
+            num_numeric = len(numeric_cols)
 
-        # Definir el número de filas y columnas para los subplots (ejemplo: 3 columnas)
-        cols = 3
-        rows = math.ceil(num_numeric / cols)
+            # Definir el número de filas y columnas para los subplots (ejemplo: 3 columnas)
+            cols = 3
+            rows = math.ceil(num_numeric / cols)
 
-        # Crear la figura para los subplots
-        fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
-        axes = axes.flatten()  # Aplanar la matriz de ejes para indexarlos fácilmente
+            # Crear la figura para los subplots
+            fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
+            axes = (
+                axes.flatten()
+            )  # Aplanar la matriz de ejes para indexarlos fácilmente
 
-        # Iterar por cada variable numérica
-        for i, col in enumerate(numeric_cols):
-            axes[i].hist(dataframe[col], bins=30, color="skyblue", edgecolor="black")
-            axes[i].set_title(f"Distribution of {col}")
-            axes[i].set_xlabel(col)
-            axes[i].set_ylabel("Frequency")
+            # Iterar por cada variable numérica
+            for i, col in enumerate(numeric_cols):
+                axes[i].hist(
+                    dataframe[col], bins=30, color="skyblue", edgecolor="black"
+                )
+                axes[i].set_title(f"Distribución de {col}")
+                axes[i].set_xlabel(col)
+                axes[i].set_ylabel("Frecuencia")
 
-        # Eliminar subplots vacíos si hay menos variables que subplots
-        for i in range(num_numeric, len(axes)):
-            fig.delaxes(axes[i])
+            # Eliminar subplots vacíos si hay menos variables que subplots
+            for i in range(num_numeric, len(axes)):
+                fig.delaxes(axes[i])
 
-        # Ajustar la disposición y mostrar el gráfico
-        plt.tight_layout()
-        plt.show()
+            # Ajustar la disposición y mostrar el gráfico
+            plt.tight_layout()
+            plt.show()
 
     # Distribucion variables categoricas
-    if len(categorical_cols) > 0:
+    if seccion in ["completo", "distribucion variables categoricas"]:
+        if len(categorical_cols) > 0:
 
-        # Número de variables categóricas
-        num_categorical = len(categorical_cols)
+            # Número de variables categóricas
+            num_categorical = len(categorical_cols)
 
-        # Definir el número de filas y columnas para los subplots (ejemplo: 3 columnas)
-        cols = 3
-        rows = math.ceil(num_categorical / cols)
+            # Definir el número de filas y columnas para los subplots (ejemplo: 3 columnas)
+            cols = 3
+            rows = math.ceil(num_categorical / cols)
 
-        # Crear la figura para los subplots
-        fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
-        axes = axes.flatten()  # Aplanar la matriz de ejes para indexarlos fácilmente
+            # Crear la figura para los subplots
+            fig, axes = plt.subplots(rows, cols, figsize=(18, rows * 6))
+            axes = (
+                axes.flatten()
+            )  # Aplanar la matriz de ejes para indexarlos fácilmente
 
-        # Iterar por cada variable categórica
-        for i, col in enumerate(categorical_cols):
-            sns.countplot(
-                data=dataframe,
-                x=col,
-                order=dataframe[col].value_counts().index,
-                ax=axes[i],
-            )
-            axes[i].set_title(f"Distribution of {col}")
-            axes[i].tick_params(axis="x", rotation=45)
+            # Iterar por cada variable categórica
+            for i, col in enumerate(categorical_cols):
+                sns.countplot(
+                    data=dataframe,
+                    x=col,
+                    order=dataframe[col].value_counts().index,
+                    ax=axes[i],
+                )
+                axes[i].set_title(f"Distribución de {col}")
+                axes[i].tick_params(axis="x", rotation=45)
 
-        # Eliminar subplots vacíos si hay menos variables que subplots
-        for i in range(num_categorical, len(axes)):
-            fig.delaxes(axes[i])
+            # Eliminar subplots vacíos si hay menos variables que subplots
+            for i in range(num_categorical, len(axes)):
+                fig.delaxes(axes[i])
 
-        # Ajustar la disposición y mostrar el gráfico
-        plt.tight_layout()
-        plt.show()
+            # Ajustar la disposición y mostrar el gráfico
+            plt.tight_layout()
+            plt.show()
 
     # Variable respuesta
-    if "AdoptionSpeed" in dataframe.columns:
-        plt.figure(figsize=(10, 6))
-        sns.countplot(
-            data=dataframe,
-            x="AdoptionSpeed",
-            order=dataframe["AdoptionSpeed"].value_counts().index,
-        )
-        plt.title("Distribution of AdoptionSpeed")
-        plt.show()
-        # UPDATE CON GRAFICO DE DENSIDAD
-        # if "AdoptionSpeed" in dataframe.columns:
-        #     # Gráfico de densidad para la variable 'AdoptionSpeed'
-        #     plt.figure(figsize=(10, 6))
-        #     sns.kdeplot(
-        #         data=dataframe,
-        #         x="AdoptionSpeed",
-        #         fill=True,  # Para rellenar el área bajo la curva
-        #         common_norm=False,  # Para evitar normalizar entre categorías si hubiera varias
-        #         bw_adjust=0.5,  # Ajusta la suavidad de la curva, puedes experimentar con este valor
-        #     )
-        # plt.title("Density of AdoptionSpeed")
-        # plt.show()
+    if seccion in ["completo", "distribucion variable respuesta"]:
+        if "AdoptionSpeed" in dataframe.columns:
+            plt.figure(figsize=(10, 6))
+            sns.countplot(
+                data=dataframe,
+                x="AdoptionSpeed",
+                order=dataframe["AdoptionSpeed"].value_counts().index,
+            )
+            plt.title("Distribution of AdoptionSpeed")
+            plt.show()
+            # UPDATE CON GRAFICO DE DENSIDAD
+            # if "AdoptionSpeed" in dataframe.columns:
+            #     # Gráfico de densidad para la variable 'AdoptionSpeed'
+            #     plt.figure(figsize=(10, 6))
+            #     sns.kdeplot(
+            #         data=dataframe,
+            #         x="AdoptionSpeed",
+            #         fill=True,  # Para rellenar el área bajo la curva
+            #         common_norm=False,  # Para evitar normalizar entre categorías si hubiera varias
+            #         bw_adjust=0.5,  # Ajusta la suavidad de la curva, puedes experimentar con este valor
+            #     )
+            # plt.title("Density of AdoptionSpeed")
+            # plt.show()
 
+    if seccion in ["completo", "relacion variables categoricas con respuesta"]:
         # Visualize the relationship between 'AdoptionSpeed' and other categorical columns
         # for col in categorical_cols:
         #     if col != "AdoptionSpeed":
@@ -192,7 +229,8 @@ def run_eda(dataframe, numeric_cols, categorical_cols):
         plt.tight_layout()
         plt.show()
 
-        # Visualize the relationship between 'AdoptionSpeed' and numeric columns
+    # Visualize the relationship between 'AdoptionSpeed' and numeric columns
+    if seccion in ["completo", "relacion variables numericas con respuesta"]:
         # Número de variables numéricas
         num_numeric = len(numeric_cols)
 
@@ -221,13 +259,14 @@ def run_eda(dataframe, numeric_cols, categorical_cols):
         plt.show()
 
     # Matriz correlacion para variables numericas (puede haber variables donde esto no tenga sentido)
-    # Ej. color
-    if len(numeric_cols) > 1:
-        plt.figure(figsize=(12, 10))
-        correlation_matrix = dataframe[numeric_cols].corr()
-        sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
-        plt.title("Correlation Matrix")
-        plt.show()
+    if seccion in ["completo", "matriz correlacion"]:
+        # Ej. color
+        if len(numeric_cols) > 1:
+            plt.figure(figsize=(12, 10))
+            correlation_matrix = dataframe[numeric_cols].corr()
+            sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
+            plt.title("Correlation Matrix")
+            plt.show()
 
     # # Pair plot for numeric columns
     # if len(numeric_cols) > 1:
@@ -235,7 +274,7 @@ def run_eda(dataframe, numeric_cols, categorical_cols):
     #     plt.suptitle("Pair Plot of Numeric Columns", y=1.02)
     #     plt.show()
 
-    print("EDA completed.")
+    # print("EDA completed.")
 
 
 # Example usage
