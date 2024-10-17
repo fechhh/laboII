@@ -227,7 +227,16 @@ def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
             )
 
             # Personalizar el gráfico
-            axes[i].set_title(f"{col} vs AdoptionSpeed (Frecuencia Relativa)")
+            if col in ["Type", "MaturitySize", "FurLength", "Sterilized", "Health"]:
+                axes[i].set_title(
+                    f"{col} vs AdoptionSpeed (Frecuencia Relativa)",
+                    fontdict={"fontsize": 20, "color": "red", "fontweight": "bold"},
+                )
+            else:
+                axes[i].set_title(
+                    f"{col} vs AdoptionSpeed (Frecuencia Relativa)",
+                    # fontdict={"fontsize": 14, "color": "black"},
+                )
             axes[i].set_ylabel("Frecuencia Relativa")
             axes[i].tick_params(
                 axis="x", rotation=45
