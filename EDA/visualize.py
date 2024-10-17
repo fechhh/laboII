@@ -45,10 +45,8 @@ def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
 
     # Informacion basica
     if seccion in ["completo", "info basica"]:
-        print("DataFrame Information:")
+        print("Detalle conjunto de datos:")
         display(dataframe.info())
-        print("\nDataFrame Description:")
-        display(dataframe[numeric_cols].describe(include="all"))
         # TODO: incluir values count para variables categoricas?
 
     # Valores perdidos
@@ -68,6 +66,9 @@ def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
 
     # Distribucion variables numericas
     if seccion in ["completo", "distribucion variables numericas"]:
+        print("\nComportamiento Variables Numéricas:")
+        display(dataframe[numeric_cols].describe(include="all"))
+
         if len(numeric_cols) > 0:
             # Número de variables numéricas
             num_numeric = len(numeric_cols)
@@ -101,6 +102,17 @@ def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
 
     # Distribucion variables categoricas
     if seccion in ["completo", "distribucion variables categoricas"]:
+        print("\nComportamiento Variables Categóricas:")
+        for col in categorical_cols:
+            display(
+                dataframe[col]
+                .value_counts(normalize=True, dropna=False)
+                .mul(100)
+                .round(0)
+                .astype(int)
+                .astype(str)
+                + "%"
+            )
         if len(categorical_cols) > 0:
 
             # Número de variables categóricas
@@ -142,7 +154,7 @@ def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
             sns.countplot(
                 data=dataframe,
                 x="AdoptionSpeed",
-                order=dataframe["AdoptionSpeed"].value_counts().index,
+                # order=dataframe["AdoptionSpeed"].value_counts().index,
             )
             plt.title("Distribution of AdoptionSpeed")
             plt.show()
