@@ -269,7 +269,13 @@ def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
             sns.boxplot(data=dataframe, x="AdoptionSpeed", y=col, ax=axes[i])
 
             # Añadir título
-            axes[i].set_title(f"{col} vs AdoptionSpeed")
+            if col in ["Age", "PhotoAmt", "Quantity"]:
+                axes[i].set_title(
+                    f"{col} vs AdoptionSpeed",
+                    fontdict={"fontsize": 20, "color": "red", "fontweight": "bold"},
+                )
+            else:
+                axes[i].set_title(f"{col} vs AdoptionSpeed")
 
         # Eliminar subplots vacíos si hay menos variables que subplots
         for i in range(num_numeric, len(axes)):
