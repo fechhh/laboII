@@ -46,7 +46,7 @@ def run_eda(dataframe, numeric_cols, categorical_cols, seccion="completo"):
     # Informacion basica
     if seccion in ["completo", "info basica"]:
         print("Detalle conjunto de datos:")
-        display(dataframe.info())
+        print(dataframe.info())
         # TODO: incluir values count para variables categoricas?
 
     # Valores perdidos
